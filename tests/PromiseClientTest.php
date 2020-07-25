@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bohan\Symfony\PromiseHttpClient\Tests;
 
 use Bohan\Symfony\PromiseHttpClient\PromiseHttpClient;
-use Exception;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use PHPUnit\Framework\TestCase;
@@ -16,8 +15,6 @@ use Symfony\Component\HttpClient\NativeHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\Test\TestHttpServer;
-
-use function get_class;
 
 class PromiseClientTest extends TestCase
 {
@@ -49,12 +46,12 @@ class PromiseClientTest extends TestCase
         $failureCallableCalled = false;
 
         $promise->then(
-            function (ResponseInterface $response) use (&$successCallableCalled) {
+            static function (ResponseInterface $response) use (&$successCallableCalled) {
                 $successCallableCalled = true;
 
                 return $response;
             },
-            function (Exception $exception) use (&$failureCallableCalled) {
+            static function (\Exception $exception) use (&$failureCallableCalled) {
                 $failureCallableCalled = true;
 
                 throw $exception;
@@ -86,12 +83,12 @@ class PromiseClientTest extends TestCase
 
         $client->request('GET', 'http://localhost:8057/timeout-body')
             ->then(
-                function (ResponseInterface $response) use (&$successCallableCalled) {
+                static function (ResponseInterface $response) use (&$successCallableCalled) {
                     $successCallableCalled = true;
 
                     return $response;
                 },
-                function (Exception $exception) use (&$failureCallableCalled) {
+                static function (\Exception $exception) use (&$failureCallableCalled) {
                     $failureCallableCalled = true;
 
                     throw $exception;
@@ -138,12 +135,12 @@ class PromiseClientTest extends TestCase
         $successCallableCalled = false;
         $failureCallableCalled = false;
         $promise->then(
-            function (ResponseInterface $response) use (&$successCallableCalled) {
+            static function (ResponseInterface $response) use (&$successCallableCalled) {
                 $successCallableCalled = true;
 
                 return $response;
             },
-            function (Exception $exception) use (&$failureCallableCalled) {
+            static function (\Exception $exception) use (&$failureCallableCalled) {
                 $failureCallableCalled = true;
 
                 throw $exception;
@@ -177,13 +174,13 @@ class PromiseClientTest extends TestCase
         $promise = $client
             ->request('GET', 'http://localhost:8057/404')
             ->then(
-                function (ResponseInterface $response) use (&$successCallableCalled, $client) {
+                static function (ResponseInterface $response) use (&$successCallableCalled, $client) {
                     $this->assertSame(404, $response->getStatusCode());
                     $successCallableCalled = true;
 
                     return $client->request('GET', 'http://localhost:8057/');
                 },
-                function (Exception $exception) use (&$failureCallableCalled) {
+                static function (\Exception $exception) use (&$failureCallableCalled) {
                     $failureCallableCalled = true;
 
                     throw $exception;
@@ -207,13 +204,13 @@ class PromiseClientTest extends TestCase
         $promise = $client
             ->request('GET', 'http://localhost:8057/chunked-broken')
             ->then(
-                function (ResponseInterface $response) use (&$successCallableCalled) {
+                static function (ResponseInterface $response) use (&$successCallableCalled) {
                     $successCallableCalled = true;
 
                     return $response;
                 },
-                function (Exception $exception) use (&$failureCallableCalled, $client) {
-                    $this->assertSame(TransportException::class, get_class($exception));
+                static function (\Exception $exception) use (&$failureCallableCalled, $client) {
+                    $this->assertSame(TransportException::class, \get_class($exception));
                     $failureCallableCalled = true;
 
                     return $client->request('GET', 'http://localhost:8057/');
@@ -235,7 +232,7 @@ class PromiseClientTest extends TestCase
 
         $client = new PromiseHttpClient(
             new MockHttpClient(
-                function () use (&$isFirstRequest, $errorMessage) {
+                static function () use (&$isFirstRequest, $errorMessage) {
                     if ($isFirstRequest) {
                         $isFirstRequest = false;
                         throw new TransportException($errorMessage);
@@ -252,22 +249,22 @@ class PromiseClientTest extends TestCase
         $promise = $client
             ->request('GET', 'http://test')
             ->then(
-                function (ResponseInterface $response) use (&$successCallableCalled) {
+                static function (ResponseInterface $response) use (&$successCallableCalled) {
                     $successCallableCalled = true;
 
                     return $response;
                 },
-                function (Exception $exception) use ($errorMessage, &$failureCallableCalled, $client) {
-                    $this->assertSame(TransportException::class, get_class($exception));
+                static function (\Exception $exception) use ($errorMessage, &$failureCallableCalled, $client) {
+                    $this->assertSame(TransportException::class, \get_class($exception));
                     $this->assertSame($errorMessage, $exception->getMessage());
 
                     $failureCallableCalled = true;
 
                     // Ensure arbitrary levels of promises work.
                     return (new FulfilledPromise(null))->then(
-                        function () use ($client) {
+                        static function () use ($client) {
                             return (new FulfilledPromise(null))->then(
-                                function () use ($client) {
+                                static function () use ($client) {
                                     return $client->request('GET', 'http://test');
                                 }
                             );

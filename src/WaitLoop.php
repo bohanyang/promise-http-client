@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Bohan\Symfony\PromiseHttpClient;
 
-use Exception;
-use SplObjectStorage;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
@@ -21,21 +19,21 @@ final class WaitLoop
     private $client;
     private $promisePool;
 
-    public function __construct(HttpClientInterface $client, SplObjectStorage $promisePool)
+    public function __construct(HttpClientInterface $client, \SplObjectStorage $promisePool)
     {
         $this->client = $client;
         $this->promisePool = $promisePool;
     }
 
-    public function wait(?ResponseInterface $pendingResponse, float $maxDuration = null, float $idleTimeout = null): int
+    public function wait(?ResponseInterface $pendingResponse, float $maxDuration = null, float $idleTimeout = null) : int
     {
         $guzzleQueue = queue();
 
         if (0.0 === $remainingDuration = $maxDuration) {
             $idleTimeout = 0.0;
         } elseif (null !== $maxDuration) {
-            $startTime = microtime(true);
-            $idleTimeout = max(0.0, min($maxDuration / 5, $idleTimeout ?? $maxDuration));
+            $startTime = \microtime(true);
+            $idleTimeout = \max(0.0, \min($maxDuration / 5, $idleTimeout ?? $maxDuration));
         }
 
         do {
@@ -58,7 +56,7 @@ final class WaitLoop
                         unset($this->promisePool[$response]);
                         $promise->resolve($response);
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     if ($promise = $this->promisePool[$response] ?? null) {
                         unset($this->promisePool[$response]);
 
