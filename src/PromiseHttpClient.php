@@ -13,6 +13,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * Make a Symfony HttpClient to return Guzzle promises.
  *
+ * @author Nicolas Grekas <p@tchwork.com>
  * @see \Symfony\Component\HttpClient\HttplugClient
  */
 final class PromiseHttpClient implements PromiseHttpClientInterface
