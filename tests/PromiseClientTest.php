@@ -174,7 +174,7 @@ class PromiseClientTest extends TestCase
         $promise = $client
             ->request('GET', 'http://localhost:8057/404')
             ->then(
-                static function (ResponseInterface $response) use (&$successCallableCalled, $client) {
+                function (ResponseInterface $response) use (&$successCallableCalled, $client) {
                     $this->assertSame(404, $response->getStatusCode());
                     $successCallableCalled = true;
 
@@ -209,7 +209,7 @@ class PromiseClientTest extends TestCase
 
                     return $response;
                 },
-                static function (\Exception $exception) use (&$failureCallableCalled, $client) {
+                function (\Exception $exception) use (&$failureCallableCalled, $client) {
                     $this->assertSame(TransportException::class, \get_class($exception));
                     $failureCallableCalled = true;
 
@@ -254,7 +254,7 @@ class PromiseClientTest extends TestCase
 
                     return $response;
                 },
-                static function (\Exception $exception) use ($errorMessage, &$failureCallableCalled, $client) {
+                function (\Exception $exception) use ($errorMessage, &$failureCallableCalled, $client) {
                     $this->assertSame(TransportException::class, \get_class($exception));
                     $this->assertSame($errorMessage, $exception->getMessage());
 
