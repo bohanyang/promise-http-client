@@ -30,13 +30,14 @@ final class PromiseHttpClient implements PromiseHttpClientInterface
 
     public function request(string $method, string $url, array $options = []) : PromiseInterface
     {
+        $promisePool = $this->promisePool;
+
         try {
             $response = $this->client->request($method, $url, $options);
-        } catch (TransportExceptionInterface $exception) {
-            return new RejectedPromise($exception);
+        } catch (TransportExceptionInterface $e) {
+            return new RejectedPromise($e);
         }
 
-        $promisePool = $this->promisePool;
         $waitLoop = $this->waitLoop;
 
         $promise = new Promise(

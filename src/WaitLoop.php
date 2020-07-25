@@ -59,7 +59,6 @@ final class WaitLoop
                 } catch (\Exception $e) {
                     if ($promise = $this->promisePool[$response] ?? null) {
                         unset($this->promisePool[$response]);
-
                         $promise->reject($e);
                     }
                 }
