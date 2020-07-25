@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bohan\Symfony\PromiseHttpClient;
 
+use Exception;
 use SplObjectStorage;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
@@ -11,7 +12,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 use function GuzzleHttp\Promise\queue;
 
 /**
- * @author Nicolas Grekas <p@tchwork.com>
+ * @see \Symfony\Component\HttpClient\Internal\HttplugWaitLoop
  *
  * @internal
  */
@@ -57,7 +58,7 @@ final class WaitLoop
                         unset($this->promisePool[$response]);
                         $promise->resolve($response);
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     if ($promise = $this->promisePool[$response] ?? null) {
                         unset($this->promisePool[$response]);
 

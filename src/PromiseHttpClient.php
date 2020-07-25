@@ -11,6 +11,11 @@ use SplObjectStorage;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+/**
+ * Make a Symfony HttpClient to return Guzzle promises.
+ *
+ * @see \Symfony\Component\HttpClient\HttplugClient
+ */
 final class PromiseHttpClient
 {
     private $client;
