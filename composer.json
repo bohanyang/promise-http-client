@@ -1,0 +1,27 @@
+{
+  "name": "bohan/promise-http-client",
+  "description": "Make a Symfony HttpClient to return Guzzle promises",
+  "type": "library",
+  "license": "Unlicense",
+  "authors": [
+    {
+      "name": "Bohan Yang",
+      "email": "youthdna@live.com"
+    }
+  ],
+  "require": {
+    "php": "^7.2.5",
+    "symfony/http-client-contracts": "^2.0",
+    "guzzlehttp/promises": "^1.3"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.2",
+    "symfony/process": "^5.1",
+    "symfony/http-client": "^5.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Bohan\\Symfony\\PromiseHttpClient\\": "src/"
+    }
+  }
+}
