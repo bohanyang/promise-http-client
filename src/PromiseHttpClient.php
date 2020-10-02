@@ -29,6 +29,9 @@ final class PromiseHttpClient implements PromiseHttpClientInterface
         $this->waitLoop = new WaitLoop($this->client, $this->promisePool);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function request(string $method, string $url, array $options = []) : PromiseInterface
     {
         $promisePool = $this->promisePool;
