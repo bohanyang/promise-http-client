@@ -10,14 +10,16 @@
     }
   ],
   "require": {
-    "php": "^7.2.5",
-    "symfony/http-client-contracts": "^2.0",
-    "guzzlehttp/promises": "^1.3"
+    "php": "^7.2.5 || ^8.0",
+    "symfony/http-client-contracts": "^1.0 || ^2.0",
+    "guzzlehttp/promises": "^1.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.2",
     "symfony/process": "^5.1",
-    "symfony/http-client": "^5.1"
+    "symfony/http-client": "5.1.x-dev",
+    "drupol/yaroc": "dev-master",
+    "monolog/monolog": "^2.1"
   },
   "autoload": {
     "psr-4": {
