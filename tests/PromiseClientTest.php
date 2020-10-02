@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bohan\Symfony\PromiseHttpClient\Tests;
 
 use Bohan\Symfony\PromiseHttpClient\PromiseHttpClient;
+use Bohan\Symfony\PromiseHttpClient\PromiseHttpClientInterface;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use PHPUnit\Framework\TestCase;
@@ -16,43 +17,43 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\Test\TestHttpServer;
 
-class PromiseClientTest extends TestCase
+final class PromiseClientTest extends TestCase
 {
     public static function setUpBeforeClass() : void
     {
         TestHttpServer::start();
     }
 
-    public function testRequest()
+    private static function createClient() : PromiseHttpClientInterface
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
-
-        /** @var ResponseInterface $response */
-        $response = $client->request('GET', 'http://localhost:8057/')->wait();
-
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/json', $response->getHeaders()['content-type'][0]);
-
-        $this->assertSame('HTTP/1.1', $response->toArray()['SERVER_PROTOCOL']);
+        return new PromiseHttpClient(new NativeHttpClient(['base_uri' => 'http://localhost:8057']));
     }
 
-    public function testAsyncRequest()
+    public function testRequest()
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
+        /** @var ResponseInterface $response */
+        $response = self::createClient()->request('GET', '/')->wait(true);
 
-        $promise = $client->request('GET', 'http://localhost:8057/');
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('application/json', $response->getHeaders(true)['content-type'][0]);
+        $this->assertSame('/', $response->toArray(true)['REQUEST_URI']);
+    }
 
-        $successCallableCalled = false;
-        $failureCallableCalled = false;
+    public function testPromise()
+    {
+        $promise = ($client = self::createClient())->request('GET', '/');
+
+        $onFulfilledCalled = false;
+        $onRejectedCalled = false;
 
         $promise->then(
-            static function (ResponseInterface $response) use (&$successCallableCalled) {
-                $successCallableCalled = true;
+            static function (ResponseInterface $response) use (&$onFulfilledCalled) {
+                $onFulfilledCalled = true;
 
                 return $response;
             },
-            static function (\Exception $exception) use (&$failureCallableCalled) {
-                $failureCallableCalled = true;
+            static function (\Exception $exception) use (&$onRejectedCalled) {
+                $onRejectedCalled = true;
 
                 throw $exception;
             }
@@ -63,125 +64,111 @@ class PromiseClientTest extends TestCase
         /** @var ResponseInterface $response */
         $response = $promise->wait(true);
 
-        $this->assertTrue($successCallableCalled, '$promise->then() was never called.');
-        $this->assertFalse($failureCallableCalled, 'Failure callable should not be called when request is successful.');
+        $this->assertTrue($onFulfilledCalled);
+        $this->assertFalse($onRejectedCalled);
 
         $this->assertEquals(Promise::FULFILLED, $promise->getState());
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/json', $response->getHeaders()['content-type'][0]);
-
-        $this->assertSame('HTTP/1.1', $response->toArray()['SERVER_PROTOCOL']);
+        $this->assertSame('application/json', $response->getHeaders(true)['content-type'][0]);
+        $this->assertSame('/', $response->toArray(true)['REQUEST_URI']);
     }
 
     public function testWait()
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
+        $onFulfilledCalled = false;
+        $onRejectedCalled = false;
 
-        $successCallableCalled = false;
-        $failureCallableCalled = false;
-
-        $client->request('GET', 'http://localhost:8057/timeout-body')
+        ($client = self::createClient())
+            ->request('GET', '/timeout-body')
             ->then(
-                static function (ResponseInterface $response) use (&$successCallableCalled) {
-                    $successCallableCalled = true;
+                static function (ResponseInterface $response) use (&$onFulfilledCalled) {
+                    $onFulfilledCalled = true;
 
                     return $response;
                 },
-                static function (\Exception $exception) use (&$failureCallableCalled) {
-                    $failureCallableCalled = true;
+                static function (\Exception $exception) use (&$onRejectedCalled) {
+                    $onRejectedCalled = true;
 
                     throw $exception;
                 }
             );
 
         $client->wait(0);
-        $this->assertFalse($successCallableCalled, '$promise->then() should not be called yet.');
+        $this->assertFalse($onFulfilledCalled, '$onFulfilled should not be called yet.');
 
         $client->wait();
-        $this->assertTrue($successCallableCalled, '$promise->then() should have been called.');
-        $this->assertFalse($failureCallableCalled, 'Failure callable should not be called when request is successful.');
+        $this->assertTrue($onFulfilledCalled, '$onFulfilled should have been called.');
+        $this->assertFalse($onRejectedCalled, '$onRejected should not be called when request is successful.');
     }
 
     public function testPostRequest()
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
-
         /** @var ResponseInterface $response */
-        $response = $client->request(
-            'POST',
-            'http://localhost:8057/post',
-            [
-                'body' => 'foo=0123456789'
-            ]
-        )->wait();
+        $response = self::createClient()
+            ->request('POST', '/post', ['body' => 'foo=0123456789'])
+            ->wait(true);
 
-        $this->assertSame(['foo' => '0123456789', 'REQUEST_METHOD' => 'POST'], $response->toArray());
+        $this->assertSame(['foo' => '0123456789', 'REQUEST_METHOD' => 'POST'], $response->toArray(true));
     }
 
-    public function testTransportException()
+    public function testTransportError()
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
-
         $this->expectException(TransportException::class);
-        $client->request('GET', 'http://localhost:8058/')->wait();
+        self::createClient()->request('GET', 'http://localhost:8058/')->wait();
     }
 
-    public function testAsyncTransportException()
+    public function testRejectedPromise()
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
+        $promise = ($client = self::createClient())->request('GET', 'http://localhost:8058/');
 
-        $promise = $client->request('GET', 'http://localhost:8058/');
-        $successCallableCalled = false;
-        $failureCallableCalled = false;
+        $onFulfilledCalled = false;
+        $onRejectedCalled = false;
+
         $promise->then(
-            static function (ResponseInterface $response) use (&$successCallableCalled) {
-                $successCallableCalled = true;
+            static function (ResponseInterface $response) use (&$onFulfilledCalled) {
+                $onFulfilledCalled = true;
 
                 return $response;
             },
-            static function (\Exception $exception) use (&$failureCallableCalled) {
-                $failureCallableCalled = true;
+            static function (\Exception $exception) use (&$onRejectedCalled) {
+                $onRejectedCalled = true;
 
                 throw $exception;
             }
         );
 
         $promise->wait(false);
-        $this->assertFalse($successCallableCalled, 'Success callable should not be called when request fails.');
-        $this->assertTrue($failureCallableCalled, 'Failure callable was never called.');
+        $this->assertFalse($onFulfilledCalled);
+        $this->assertTrue($onRejectedCalled);
         $this->assertEquals(Promise::REJECTED, $promise->getState());
 
         $this->expectException(TransportException::class);
-        $promise->wait(true);
+        $promise->wait();
     }
 
-    public function testRequestException()
+    public function testInvalidRequest()
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
-
         $this->expectException(InvalidArgumentException::class);
-        $client->request('BAD.METHOD', 'http://localhost:8057/')->wait();
+        self::createClient()->request('BAD.METHOD', '/')->wait();
     }
 
-    public function testRetry404()
+    public function testRetryHttpError()
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
+        $onFulfilledCalled = false;
+        $onRejectedCalled = false;
 
-        $successCallableCalled = false;
-        $failureCallableCalled = false;
-
-        $promise = $client
-            ->request('GET', 'http://localhost:8057/404')
+        $promise = ($client = self::createClient())
+            ->request('GET', '/404')
             ->then(
-                function (ResponseInterface $response) use (&$successCallableCalled, $client) {
+                function (ResponseInterface $response) use (&$onFulfilledCalled, $client) {
                     $this->assertSame(404, $response->getStatusCode());
-                    $successCallableCalled = true;
+                    $onFulfilledCalled = true;
 
-                    return $client->request('GET', 'http://localhost:8057/');
+                    return $client->request('GET', '/');
                 },
-                static function (\Exception $exception) use (&$failureCallableCalled) {
-                    $failureCallableCalled = true;
+                static function (\Exception $exception) use (&$onRejectedCalled) {
+                    $onRejectedCalled = true;
 
                     throw $exception;
                 }
@@ -189,38 +176,36 @@ class PromiseClientTest extends TestCase
 
         $response = $promise->wait(true);
 
-        $this->assertTrue($successCallableCalled);
-        $this->assertFalse($failureCallableCalled);
+        $this->assertTrue($onFulfilledCalled);
+        $this->assertFalse($onRejectedCalled);
         $this->assertSame(200, $response->getStatusCode());
     }
 
-    public function testRetryNetworkError()
+    public function testRetryBrokenBody()
     {
-        $client = new PromiseHttpClient(new NativeHttpClient());
+        $onFulfilledCalled = false;
+        $onRejectedCalled = false;
 
-        $successCallableCalled = false;
-        $failureCallableCalled = false;
-
-        $promise = $client
-            ->request('GET', 'http://localhost:8057/chunked-broken')
+        $promise = ($client = self::createClient())
+            ->request('GET', '/chunked-broken')
             ->then(
-                static function (ResponseInterface $response) use (&$successCallableCalled) {
-                    $successCallableCalled = true;
+                static function (ResponseInterface $response) use (&$onFulfilledCalled) {
+                    $onFulfilledCalled = true;
 
                     return $response;
                 },
-                function (\Exception $exception) use (&$failureCallableCalled, $client) {
+                function (\Exception $exception) use (&$onRejectedCalled, $client) {
                     $this->assertSame(TransportException::class, \get_class($exception));
-                    $failureCallableCalled = true;
+                    $onRejectedCalled = true;
 
-                    return $client->request('GET', 'http://localhost:8057/');
+                    return $client->request('GET', '/');
                 }
             );
 
         $response = $promise->wait(true);
 
-        $this->assertFalse($successCallableCalled);
-        $this->assertTrue($failureCallableCalled);
+        $this->assertFalse($onFulfilledCalled);
+        $this->assertTrue($onRejectedCalled);
 
         $this->assertSame(200, $response->getStatusCode());
     }
@@ -243,22 +228,22 @@ class PromiseClientTest extends TestCase
             )
         );
 
-        $successCallableCalled = false;
-        $failureCallableCalled = false;
+        $onFulfilledCalled = false;
+        $onRejectedCalled = false;
 
         $promise = $client
             ->request('GET', 'http://test')
             ->then(
-                static function (ResponseInterface $response) use (&$successCallableCalled) {
-                    $successCallableCalled = true;
+                static function (ResponseInterface $response) use (&$onFulfilledCalled) {
+                    $onFulfilledCalled = true;
 
                     return $response;
                 },
-                function (\Exception $exception) use ($errorMessage, &$failureCallableCalled, $client) {
+                function (\Exception $exception) use ($errorMessage, &$onRejectedCalled, $client) {
                     $this->assertSame(TransportException::class, \get_class($exception));
                     $this->assertSame($errorMessage, $exception->getMessage());
 
-                    $failureCallableCalled = true;
+                    $onRejectedCalled = true;
 
                     // Ensure arbitrary levels of promises work.
                     return (new FulfilledPromise(null))->then(
@@ -276,10 +261,10 @@ class PromiseClientTest extends TestCase
         /** @var ResponseInterface $response */
         $response = $promise->wait(true);
 
-        $this->assertFalse($successCallableCalled);
-        $this->assertTrue($failureCallableCalled);
+        $this->assertFalse($onFulfilledCalled);
+        $this->assertTrue($onRejectedCalled);
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('OK', $response->getContent());
+        $this->assertSame('OK', $response->getContent(true));
     }
 }
