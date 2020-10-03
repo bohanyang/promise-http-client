@@ -37,8 +37,8 @@ echo $response->getStatusCode(); // 200
 ## Credits
 
 Most code of
- - src/PromiseHttpClient.php
- - src/WaitLoop.php
- - tests/PromiseClientTest.php
+ - [src/PromiseHttpClient.php](https://github.com/bohanyang/promise-http-client/blob/master/src/PromiseHttpClient.php)
+ - [src/WaitLoop.php](https://github.com/bohanyang/promise-http-client/blob/master/src/WaitLoop.php)
+ - [tests/PromiseHttpClientTest.php](https://github.com/bohanyang/promise-http-client/blob/master/tests/PromiseHttpClientTest.php)
 
-comes from the `HttplugClient` of the [Symfony HttpClient component](https://github.com/symfony/http-client).
+comes from the [HttplugClient](https://github.com/symfony/http-client/blob/master/HttplugClient.php) of the [Symfony HttpClient component](https://github.com/symfony/http-client).
