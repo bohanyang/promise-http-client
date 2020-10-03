@@ -11,6 +11,7 @@ use function GuzzleHttp\Promise\queue;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
+ *
  * @see \Symfony\Component\HttpClient\Internal\HttplugWaitLoop
  *
  * @internal

@@ -18,7 +18,6 @@
     "phpunit/phpunit": "^9.2",
     "symfony/process": "^5.1",
     "symfony/http-client": "5.1.x-dev",
-    "drupol/yaroc": "dev-master",
     "monolog/monolog": "^2.1"
   },
   "autoload": {
