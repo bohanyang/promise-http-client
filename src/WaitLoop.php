@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Bohan\PromiseHttpClient;
 
+use GuzzleHttp\Promise\Utils;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
-
-use function GuzzleHttp\Promise\queue;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
@@ -29,7 +28,7 @@ final class WaitLoop
 
     public function wait(?ResponseInterface $pendingResponse, float $maxDuration = null, float $idleTimeout = null) : int
     {
-        $guzzleQueue = queue();
+        $guzzleQueue = Utils::queue();
 
         if (0.0 === $remainingDuration = $maxDuration) {
             $idleTimeout = 0.0;

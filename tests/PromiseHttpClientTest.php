@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Bohan\PromiseHttpClient\Tests;
 
+use Bohan\PromiseHttpClient\DelayStrategy\ConstantDelay;
 use Bohan\PromiseHttpClient\PromiseHttpClient;
 use Bohan\PromiseHttpClient\PromiseHttpClientInterface;
+use Bohan\PromiseHttpClient\RetryableHttpClient;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use PHPUnit\Framework\TestCase;
