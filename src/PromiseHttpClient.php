@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bohan\Symfony\PromiseHttpClient;
+namespace Bohan\PromiseHttpClient;
 
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;

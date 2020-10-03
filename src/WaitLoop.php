@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bohan\Symfony\PromiseHttpClient;
+namespace Bohan\PromiseHttpClient;
 
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;

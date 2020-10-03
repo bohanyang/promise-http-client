@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bohan\Symfony\PromiseHttpClient\Tests;
+namespace Bohan\PromiseHttpClient\Tests;
 
-use Bohan\Symfony\PromiseHttpClient\PromiseHttpClient;
-use Bohan\Symfony\PromiseHttpClient\PromiseHttpClientInterface;
+use Bohan\PromiseHttpClient\PromiseHttpClient;
+use Bohan\PromiseHttpClient\PromiseHttpClientInterface;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use PHPUnit\Framework\TestCase;
@@ -17,7 +17,7 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\Test\TestHttpServer;
 
-final class PromiseClientTest extends TestCase
+final class PromiseHttpClientTest extends TestCase
 {
     public static function setUpBeforeClass() : void
     {

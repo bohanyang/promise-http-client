@@ -15,7 +15,7 @@ composer require symfony/http-client
 ## Example usage
 
 ```php
-use Bohan\Symfony\PromiseHttpClient\PromiseHttpClient;
+use Bohan\PromiseHttpClient\PromiseHttpClient;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 

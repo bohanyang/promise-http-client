@@ -23,7 +23,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Bohan\\Symfony\\PromiseHttpClient\\": "src/"
+      "Bohan\\PromiseHttpClient\\": "src/"
     }
   }
 }
