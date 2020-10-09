@@ -2,13 +2,13 @@
 
 ## Install
 
-```shell script
+```sh
 composer require bohan/promise-http-client
 ```
 
 If you don't have a [symfony/http-client-implementation](https://packagist.org/providers/symfony/http-client-implementation) yet:
 
-```shell script
+```sh
 composer require symfony/http-client
 ```
 
