@@ -38,12 +38,12 @@ class  RetryableHttpClientTest extends TestCase
         );
     }
 
-    private static function delay(int $millis = 0) : DelayStrategyInterface
+    private static function delay(?int $ms) : DelayStrategyInterface
     {
-        return new ConstantDelay($millis);
+        return new ConstantDelay($ms);
     }
 
-    private static function retryOn(int $statusCode = 503) : RetryStrategyInterface
+    private static function retryOn(int $statusCode) : RetryStrategyInterface
     {
         return new class($statusCode) implements RetryStrategyInterface {
             private $statusCode;
@@ -104,7 +104,7 @@ class  RetryableHttpClientTest extends TestCase
     }
 
     /** @dataProvider getDelayTestData */
-    public function testDelay(int $millis, string $expected)
+    public function testDelay(int $ms, string $expected)
     {
         $handler = function () use (&$expected) {
             if (\is_string($expected)) {
@@ -118,7 +118,7 @@ class  RetryableHttpClientTest extends TestCase
             return new MockResponse('', ['http_code' => 200]);
         };
 
-        $client = self::mock($handler, self::retryOn(503), self::delay($millis), 2);
+        $client = self::mock($handler, self::retryOn(503), self::delay($ms), 2);
 
         /** @var ResponseInterface $response */
         $response = $client->request('GET', __FUNCTION__)->wait(true);
@@ -162,7 +162,7 @@ class  RetryableHttpClientTest extends TestCase
 
             public function onException(TransportExceptionInterface $exception) : bool
             {
-                return !$exception instanceof InvalidArgumentException;
+                return $exception instanceof \RuntimeException;
             }
         };
 

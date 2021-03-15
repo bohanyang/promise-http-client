@@ -27,9 +27,9 @@ class DelayStrategyTest extends TestCase
     }
 
     /** @dataProvider getExponentialBackOffTestData */
-    public function testExponentialBackOff(int $millis, float $multiplier, int $count, int $expected)
+    public function testExponentialBackOff(int $msecs, float $multiplier, int $count, int $expected)
     {
-        $this->assertSame($expected, (new ExponentialBackOff($millis, $multiplier))->getDelay($count));
+        $this->assertSame($expected, (new ExponentialBackOff($msecs, $multiplier))->getDelay($count));
     }
 
     public function getIncrementalBackOffTestData()
@@ -91,20 +91,22 @@ class DelayStrategyTest extends TestCase
             ['-1', null]
         ];
 
-        $time = new \DateTimeImmutable('1 sec', new \DateTimeZone('UTC'));
+        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $mockTimestamp = $time->getTimestamp();
+        $time = $time->modify('1 sec');
 
         yield from [
-            [$time->format('D, d M Y H:i:s') . ' GMT', 1000],
-            [$time->format('D, d M Y H:i:s T'), null],
-            [$time->format('Y-m-d H:i:s') . ' GMT', null]
+            [$time->format('D, d M Y H:i:s') . ' GMT', 1000, $mockTimestamp],
+            [$time->format('D, d M Y H:i:s T'), null, $mockTimestamp],
+            [$time->format('Y-m-d H:i:s') . ' GMT', null, $mockTimestamp]
         ];
     }
 
     /** @dataProvider getRetryAfterHeaderTestData */
-    public function testRetryAfterHeader(string $value, ?int $expected)
+    public function testRetryAfterHeader(string $value, ?int $expected, int $mockTimestamp = null)
     {
         $response = new MockResponse('', ['http_code' => 429, 'response_headers' => ['Retry-After' => $value]]);
-        $this->assertSame($expected, (new RetryAfterHeader())->getDelay(2, $response));
+        $this->assertSame($expected, (new RetryAfterHeader($mockTimestamp))->getDelay(2, $response));
     }
 
     public function getDelayJitterTestData()

@@ -11,17 +11,17 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 class ConstantDelay implements DelayStrategyInterface
 {
     /** @var int|null */
-    private $millis;
+    private $delay;
 
-    public function __construct(?int $millis)
+    public function __construct(?int $ms)
     {
-        if ($millis !== null && $millis < 0) {
-            throw new InvalidArgumentException(
-                sprintf('Time of delay in milliseconds must be greater than zero: "%s" given.', $millis)
-            );
+        if ($ms !== null && $ms < 0) {
+            throw new InvalidArgumentException(\sprintf(
+                'Time of delay in milliseconds must be greater than zero: "%s" given.', $ms
+            ));
         }
 
-        $this->millis = $millis;
+        $this->delay = $ms;
     }
 
     /**
@@ -29,6 +29,6 @@ class ConstantDelay implements DelayStrategyInterface
      */
     public function getDelay(int $count, ResponseInterface $response = null) : ?int
     {
-        return $this->millis;
+        return $this->delay;
     }
 }

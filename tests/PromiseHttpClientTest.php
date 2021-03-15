@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Bohan\PromiseHttpClient\Tests;
 
-use Bohan\PromiseHttpClient\DelayStrategy\ConstantDelay;
 use Bohan\PromiseHttpClient\PromiseHttpClient;
 use Bohan\PromiseHttpClient\PromiseHttpClientInterface;
-use Bohan\PromiseHttpClient\RetryableHttpClient;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +26,7 @@ final class PromiseHttpClientTest extends TestCase
 
     private static function createClient() : PromiseHttpClientInterface
     {
-        return new PromiseHttpClient(new NativeHttpClient(['base_uri' => 'http://localhost:8057']));
+        return new PromiseHttpClient(new NativeHttpClient(['base_uri' => 'http://127.0.0.1:8057']));
     }
 
     public function testRequest()
@@ -117,12 +115,12 @@ final class PromiseHttpClientTest extends TestCase
     public function testTransportError()
     {
         $this->expectException(TransportException::class);
-        self::createClient()->request('GET', 'http://localhost:8058/')->wait();
+        self::createClient()->request('GET', 'http://127.0.0.1:8058/')->wait();
     }
 
     public function testRejectedPromise()
     {
-        $promise = ($client = self::createClient())->request('GET', 'http://localhost:8058/');
+        $promise = ($client = self::createClient())->request('GET', 'http://127.0.0.1:8058/');
 
         $onFulfilledCalled = false;
         $onRejectedCalled = false;

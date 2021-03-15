@@ -9,6 +9,14 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 
 final class RetryAfterHeader implements DelayStrategyInterface
 {
+    /** @var int|null */
+    private $mockTimestamp;
+
+    public function __construct(int $mockTimestamp = null)
+    {
+        $this->mockTimestamp = $mockTimestamp;
+    }
+
     /**
      * @inheritDoc
      */
@@ -18,7 +26,7 @@ final class RetryAfterHeader implements DelayStrategyInterface
             $headers = $response->getHeaders(false);
 
             if (isset($headers['retry-after'][0])) {
-                $seconds = self::parseToSeconds($headers['retry-after'][0]);
+                $seconds = $this->parseToSeconds($headers['retry-after'][0]);
 
                 if ($seconds !== null) {
                     return $seconds * 1000;
@@ -30,7 +38,7 @@ final class RetryAfterHeader implements DelayStrategyInterface
     }
 
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
-    private static function parseToSeconds(string $value) : ?int
+    private function parseToSeconds(string $value) : ?int
     {
         $seconds = (int) $value = \trim($value);
 
@@ -42,7 +50,7 @@ final class RetryAfterHeader implements DelayStrategyInterface
             $value = \DateTimeImmutable::createFromFormat('D, d M Y H:i:s \G\M\T', $value, new \DateTimeZone('UTC'));
 
             if ($value) {
-                return $value->getTimestamp() - \time();
+                return $value->getTimestamp() - ($this->mockTimestamp ?? \time());
             }
         }
 

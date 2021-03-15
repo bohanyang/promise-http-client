@@ -19,16 +19,16 @@ class DelayCap implements DelayStrategyInterface
     /** @var bool */
     private $fallthrough;
 
-    public function __construct(int $max, DelayStrategyInterface $strategy, bool $fallthrough = false)
+    public function __construct(int $maxMs, DelayStrategyInterface $strategy, bool $fallthrough = false)
     {
-        if ($max < 0) {
-            throw new InvalidArgumentException(
-                sprintf('Maximum time of delay in milliseconds must be greater than zero: "%s" given.', $max)
-            );
+        if ($maxMs < 0) {
+            throw new InvalidArgumentException(\sprintf(
+                'Maximum time of delay in milliseconds must be greater than zero: "%s" given.', $maxMs
+            ));
         }
 
         $this->strategy = $strategy;
-        $this->max = $max;
+        $this->max = $maxMs;
         $this->fallthrough = $fallthrough;
     }
 

@@ -19,9 +19,9 @@ class DelayJitter implements DelayStrategyInterface
     public function __construct(float $factor, DelayStrategyInterface $strategy)
     {
         if ($factor < 0.0 || $factor > 1.0) {
-            throw new InvalidArgumentException(
-                sprintf('Factor must in between of zero and one: "%s" given.', $factor)
-            );
+            throw new InvalidArgumentException(\sprintf(
+                'Factor must in between of zero and one: "%s" given.', $factor
+            ));
         }
 
         $this->factor = $factor;

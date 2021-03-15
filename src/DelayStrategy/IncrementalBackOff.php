@@ -11,17 +11,17 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 final class IncrementalBackOff implements DelayStrategyInterface
 {
     /** @var int */
-    private $millis;
+    private $initial;
 
-    public function __construct(int $millis)
+    public function __construct(int $initialMs)
     {
-        if ($millis < 0) {
-            throw new InvalidArgumentException(
-                sprintf('Base time of delay in milliseconds must be greater than or equal to zero: "%s" given.', $millis)
-            );
+        if ($initialMs < 0) {
+            throw new InvalidArgumentException(\sprintf(
+                'Initial time of delay in milliseconds must be greater than or equal to zero: "%s" given.', $initialMs
+            ));
         }
 
-        $this->millis = $millis;
+        $this->initial = $initialMs;
     }
 
     /**
@@ -29,6 +29,6 @@ final class IncrementalBackOff implements DelayStrategyInterface
      */
     public function getDelay(int $count, ResponseInterface $response = null) : int
     {
-        return $this->millis * $count;
+        return $this->initial * $count;
     }
 }

@@ -11,26 +11,26 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 final class ExponentialBackOff implements DelayStrategyInterface
 {
     /** @var int */
-    private $millis;
+    private $initial;
 
     /** @var float */
     private $multiplier;
 
-    public function __construct(int $millis, float $multiplier)
+    public function __construct(int $initialMs, float $multiplier)
     {
-        if ($millis < 0) {
-            throw new InvalidArgumentException(
-                \sprintf('Base time of delay in milliseconds must be greater than or equal to zero: "%s" given.', $millis)
-            );
+        if ($initialMs < 0) {
+            throw new InvalidArgumentException(\sprintf(
+                'Initial time of delay in milliseconds must be greater than or equal to zero: "%s" given.', $initialMs
+            ));
         }
 
         if ($multiplier < 1.0) {
-            throw new InvalidArgumentException(
-                \sprintf('Multiplier must be greater than or equal to one: "%s" given.', $multiplier)
-            );
+            throw new InvalidArgumentException(\sprintf(
+                'Multiplier must be greater than or equal to one: "%s" given.', $multiplier
+            ));
         }
 
-        $this->millis = $millis;
+        $this->initial = $initialMs;
         $this->multiplier = $multiplier;
     }
 
@@ -40,7 +40,7 @@ final class ExponentialBackOff implements DelayStrategyInterface
     public function getDelay(int $count, ResponseInterface $response = null) : int
     {
         return (int) \round(
-            $this->millis * $this->multiplier ** ($count - 1)
+            $this->initial * $this->multiplier ** ($count - 1)
         );
     }
 }
