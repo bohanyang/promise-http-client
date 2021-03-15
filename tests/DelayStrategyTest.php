@@ -16,7 +16,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class DelayStrategyTest extends TestCase
 {
-    public function getExponentialBackOffTestData()
+    public function getExponentialBackOffTestData() : iterable
     {
         return [
             [0, 2.0, 2, 0],
@@ -27,12 +27,12 @@ class DelayStrategyTest extends TestCase
     }
 
     /** @dataProvider getExponentialBackOffTestData */
-    public function testExponentialBackOff(int $msecs, float $multiplier, int $count, int $expected)
+    public function testExponentialBackOff(int $initialMs, float $multiplier, int $count, int $expected) : void
     {
-        $this->assertSame($expected, (new ExponentialBackOff($msecs, $multiplier))->getDelay($count));
+        $this->assertSame($expected, (new ExponentialBackOff($initialMs, $multiplier))->getDelay($count));
     }
 
-    public function getIncrementalBackOffTestData()
+    public function getIncrementalBackOffTestData() : iterable
     {
         return [
             [500, 1, 500],
@@ -41,12 +41,12 @@ class DelayStrategyTest extends TestCase
     }
 
     /** @dataProvider getIncrementalBackOffTestData */
-    public function testIncrementalBackOff(int $millis, int $count, int $expected)
+    public function testIncrementalBackOff(int $initialMs, int $count, int $expected) : void
     {
-        $this->assertSame($expected, (new IncrementalBackOff($millis))->getDelay($count));
+        $this->assertSame($expected, (new IncrementalBackOff($initialMs))->getDelay($count));
     }
 
-    public function getDelayCapTestData()
+    public function getDelayCapTestData() : iterable
     {
         return [
             [123, false, null, null],
@@ -59,7 +59,7 @@ class DelayStrategyTest extends TestCase
     }
 
     /** @dataProvider getDelayCapTestData */
-    public function testDelayCap(int $max, bool $fallthrough, ?int $delay, ?int $expected)
+    public function testDelayCap(int $max, bool $fallthrough, ?int $delay, ?int $expected) : void
     {
         $strategy = new DelayCap(
             $max,
@@ -82,7 +82,7 @@ class DelayStrategyTest extends TestCase
         $this->assertSame($expected, $strategy->getDelay(2));
     }
 
-    public function getRetryAfterHeaderTestData()
+    public function getRetryAfterHeaderTestData() : iterable
     {
         yield from [
             ['0', 0],

@@ -7,6 +7,7 @@ namespace Bohan\PromiseHttpClient\Tests;
 use Bohan\PromiseHttpClient\DelayStrategy\ConstantDelay;
 use Bohan\PromiseHttpClient\DelayStrategyInterface;
 use Bohan\PromiseHttpClient\PromiseHttpClient;
+use Bohan\PromiseHttpClient\PromiseHttpClientInterface;
 use Bohan\PromiseHttpClient\RetryableHttpClient;
 use Bohan\PromiseHttpClient\RetryStrategyInterface;
 use Monolog\Handler\StreamHandler;
@@ -27,15 +28,12 @@ class  RetryableHttpClientTest extends TestCase
         RetryStrategyInterface $retryStrategy,
         DelayStrategyInterface $delayStrategy,
         int $maxRetries
-    )
+    ) : PromiseHttpClientInterface
     {
-        return new RetryableHttpClient(
-            new PromiseHttpClient(new MockHttpClient($responses, 'http://test')),
-            $retryStrategy,
-            $delayStrategy,
-            $maxRetries,
-            new Logger('', [new StreamHandler('php://stderr')], [new PsrLogMessageProcessor()])
-        );
+        $client = new PromiseHttpClient(new MockHttpClient($responses, 'http://test'));
+        $logger = new Logger('', [new StreamHandler('php://stderr')], [new PsrLogMessageProcessor()]);
+
+        return new RetryableHttpClient($client, $retryStrategy, $delayStrategy, $maxRetries, $logger);
     }
 
     private static function delay(?int $ms) : DelayStrategyInterface
@@ -65,7 +63,7 @@ class  RetryableHttpClientTest extends TestCase
         };
     }
 
-    public function getMaxRetriesTestData()
+    public function getMaxRetriesTestData() : iterable
     {
         return [
             [2, 3, false],
@@ -77,7 +75,7 @@ class  RetryableHttpClientTest extends TestCase
     }
 
     /** @dataProvider getMaxRetriesTestData */
-    public function testMaxRetries(int $errors, int $maxRetries, bool $expectError)
+    public function testMaxRetries(int $errors, int $maxRetries, bool $expectError) : void
     {
         $responses = [];
 
@@ -90,43 +88,12 @@ class  RetryableHttpClientTest extends TestCase
         $client = self::mock($responses, self::retryOn(503), self::delay(0), $maxRetries);
 
         /** @var ResponseInterface $response */
-        $response = $client->request('GET', __FUNCTION__)->wait(true);
+        $response = $client->request('GET', __FUNCTION__)->wait();
 
         self::assertSame($expectError ? 503 : 200, $response->getStatusCode());
     }
 
-    public function getDelayTestData()
-    {
-        return [
-            [1000, '1 sec'],
-            [500, '500 ms']
-        ];
-    }
-
-    /** @dataProvider getDelayTestData */
-    public function testDelay(int $ms, string $expected)
-    {
-        $handler = function () use (&$expected) {
-            if (\is_string($expected)) {
-                $expected = new \DateTimeImmutable($expected);
-
-                return new MockResponse('', ['http_code' => 503]);
-            }
-
-            $this->assertGreaterThan($expected, new \DateTimeImmutable());
-
-            return new MockResponse('', ['http_code' => 200]);
-        };
-
-        $client = self::mock($handler, self::retryOn(503), self::delay($ms), 2);
-
-        /** @var ResponseInterface $response */
-        $response = $client->request('GET', __FUNCTION__)->wait(true);
-
-        self::assertSame(200, $response->getStatusCode());
-    }
-
-    public function getRetryExceptionTestData()
+    public function getRetryExceptionTestData() : iterable
     {
         $responses = [
             new MockResponse(['']),
@@ -152,7 +119,7 @@ class  RetryableHttpClientTest extends TestCase
     }
 
     /** @dataProvider getRetryExceptionTestData */
-    public function testRetryException($responses, \Exception $exception = null)
+    public function testRetryException($responses, \Exception $exception = null) : void
     {
         $strategy = new class implements RetryStrategyInterface {
             public function onResponse(ResponseInterface $response) : bool
@@ -171,13 +138,13 @@ class  RetryableHttpClientTest extends TestCase
 
         if ($exception === null) {
             /** @var ResponseInterface $response */
-            $response = $promise->wait(true);
+            $response = $promise->wait();
 
             $this->assertSame(200, $response->getStatusCode());
         } else {
             $this->expectExceptionObject($exception);
 
-            $promise->wait(true);
+            $promise->wait();
         }
     }
 }

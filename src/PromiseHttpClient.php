@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Bohan\PromiseHttpClient;
 
+use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 /**
  * Make a Symfony HttpClient to return Guzzle promises.
@@ -36,7 +38,8 @@ final class PromiseHttpClient implements PromiseHttpClientInterface
      */
     public function request(string $method, string $url, array $options = []) : PromiseInterface
     {
-        $promisePool = $this->promisePool;
+        $delayMs = $options['delay'] ?? null;
+        unset($options['delay']);
 
         try {
             $response = $this->client->request($method, $url, $options);
@@ -44,6 +47,7 @@ final class PromiseHttpClient implements PromiseHttpClientInterface
             return new RejectedPromise($e);
         }
 
+        $promisePool = $this->promisePool;
         $waitLoop = $this->waitLoop;
 
         $promise = new Promise(
@@ -52,11 +56,22 @@ final class PromiseHttpClient implements PromiseHttpClientInterface
             },
             static function () use ($response, $promisePool) {
                 $response->cancel();
-                unset($promisePool[$response]);
+                $promisePool->detach($response);
             }
         );
 
-        $promisePool[$response] = $promise;
+        $promisePool->attach($response, $promise);
+
+        if (\is_int($delayMs) && $delayMs > 0) {
+            if (!\is_callable($pause = $response->getInfo('pause_handler'))) {
+                return (new FulfilledPromise(null))->then(static function () use ($delayMs, $promise) {
+                    \usleep($delayMs * 1000);
+
+                    return $promise;
+                });
+            }
+            $pause($delayMs / 1e3);
+        }
 
         return $promise;
     }

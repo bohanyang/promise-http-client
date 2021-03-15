@@ -8,13 +8,17 @@ use Bohan\PromiseHttpClient\DelayStrategy\DelayStrategyChain;
 use Bohan\PromiseHttpClient\RetryStrategy\DefaultRetryStrategy;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
-final class RetryableHttpClient implements PromiseHttpClientInterface
+final class RetryableHttpClient implements PromiseHttpClientInterface, LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /** @var PromiseHttpClientInterface */
     private $client;
 
@@ -27,8 +31,8 @@ final class RetryableHttpClient implements PromiseHttpClientInterface
     /** @var int */
     private $maxRetries;
 
-    /** @var LoggerInterface */
-    private $logger;
+    /** @var LoggerInterface|null */
+    protected $logger;
 
     public function __construct(
         PromiseHttpClientInterface $client,
@@ -41,7 +45,7 @@ final class RetryableHttpClient implements PromiseHttpClientInterface
         $this->retryStrategy = $retryStrategy ?: new DefaultRetryStrategy();
         $this->delayStrategy = $delayStrategy ?: DelayStrategyChain::createDefault();
         $this->maxRetries = $maxRetries;
-        $this->logger = $logger ?: new NullLogger();
+        $this->logger = $logger;
     }
 
     public function request(string $method, string $url, array $options = []) : PromiseInterface
@@ -60,14 +64,9 @@ final class RetryableHttpClient implements PromiseHttpClientInterface
             );
         }
 
-        $this->logger->debug(
+        $this->logger && $this->logger->debug(
             'Reached max retries of {maxRetries}',
-            [
-                'method' => $method,
-                'url' => $url,
-                'count' => $count,
-                'maxRetries' => $this->maxRetries
-            ]
+            ['method' => $method, 'url' => $url, 'count' => $count, 'maxRetries' => $this->maxRetries]
         );
 
         return $promise;
@@ -76,20 +75,15 @@ final class RetryableHttpClient implements PromiseHttpClientInterface
     private function onFulfilled(string $method, string $url, array $options, int $count) : callable
     {
         return function (ResponseInterface $response) use ($method, $url, $options, $count) {
-            $context = [
-                'method' => $method,
-                'url' => $url,
-                'statusCode' => $response->getStatusCode(),
-                'count' => $count
-            ];
+            $context = ['method' => $method, 'url' => $url, 'statusCode' => $response->getStatusCode(), 'count' => $count];
 
             if ($this->retryStrategy->onResponse($response)) {
-                $this->logger->info('Retrying on response of status {statusCode}', $context);
+                $this->logger && $this->logger->info('Retrying on response of status {statusCode}', $context);
 
                 return $this->doRetry($method, $url, $options, $count, $response);
             }
 
-            $this->logger->debug('Returning response of status {statusCode}', $context);
+            $this->logger && $this->logger->debug('Returning response of status {statusCode}', $context);
 
             return $response;
         };
@@ -99,44 +93,32 @@ final class RetryableHttpClient implements PromiseHttpClientInterface
     {
         return function ($reason) use ($method, $url, $options, $count) {
             if ($reason instanceof TransportExceptionInterface) {
-                $context = [
-                    'method' => $method,
-                    'url' => $url,
-                    'exception' => $reason,
-                    'count' => $count
-                ];
+                $context = ['method' => $method, 'url' => $url, 'exception' => $reason, 'count' => $count];
 
                 if ($this->retryStrategy->onException($reason)) {
-                    $this->logger->info('Retrying on exception', $context);
+                    $this->logger && $this->logger->info('Retrying on exception', $context);
 
                     return $this->doRetry($method, $url, $options, $count, null);
                 }
 
-                $this->logger->debug('Rejecting with exception', $context);
+                $this->logger && $this->logger->debug('Rejecting with exception', $context);
             }
 
             return new RejectedPromise($reason);
         };
     }
 
-    private function doRetry(
-        string $method,
-        string $url,
-        array $options,
-        int $count,
-        ?ResponseInterface $response
-    ) : PromiseInterface {
+    private function doRetry(string $method, string $url, array $options, int $count, ?ResponseInterface $response) : PromiseInterface {
         $delay = $this->delayStrategy->getDelay(++$count, $response);
-        $context = \compact('method', 'url', 'count', 'delay');
+        $context = ['method' => $method, 'url' => $url, 'count' => $count, 'delay' => $delay];
 
         if ($delay !== null && $delay > 0) {
-            $this->logger->info('Retrying #{count} with {delay} ms delay', $context);
-            \usleep($delay * 1000);
+            $this->logger && $this->logger->info('Retrying #{count} with {delay} ms delay', $context);
 
-            return $this->doRequest($method, $url, $options, $count);
+            return $this->doRequest($method, $url, ['delay' => $delay] + $options, $count);
         }
 
-        $this->logger->info("Retrying #{count} without delay", $context);
+        $this->logger && $this->logger->info("Retrying #{count} without delay", $context);
 
         return $this->doRequest($method, $url, $options, $count);
     }
